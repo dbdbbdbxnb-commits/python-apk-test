@@ -36,6 +36,11 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;33.0.2"
 
+          # FIX LOI sdkmanager cho buildozer
+          mkdir -p $HOME/android-sdk/tools/bin
+          ln -s $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+                $HOME/android-sdk/tools/bin/sdkmanager
+
       - name: Build APK
         run: |
           export ANDROID_SDK_ROOT=$HOME/android-sdk
