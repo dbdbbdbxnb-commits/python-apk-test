@@ -7,24 +7,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04   # tránh python 3.12
 
     steps:
-      - name: Tai ma nguon
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Cai Java + Python
+      - name: Setup Python 3.10 (KHÔNG dùng 3.12)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies (QUAN TRỌNG)
         run: |
           sudo apt update
-          sudo apt install -y python3 python3-pip zip unzip openjdk-17-jdk
+          sudo apt install -y \
+            openjdk-17-jdk \
+            python3-pip \
+            zip unzip \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            build-essential \
+            cmake
+
+      - name: Install Python tools
+        run: |
           pip install --upgrade pip
           pip install cython buildozer kivy
 
-      - name: Cai Android SDK + Accept License
+      - name: Install Android SDK
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
           cd $HOME/android-sdk/cmdline-tools
-
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip commandlinetools-linux-11076708_latest.zip
           mv cmdline-tools latest
@@ -34,21 +50,26 @@ jobs:
           export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
 
           yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;33.0.2"
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "ndk;23.2.8568313"
 
-          # FIX LOI sdkmanager cho buildozer
+          # FIX sdkmanager path cho buildozer
           mkdir -p $HOME/android-sdk/tools/bin
-          ln -s $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
                 $HOME/android-sdk/tools/bin/sdkmanager
 
       - name: Build APK
         run: |
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export ANDROID_HOME=$HOME/android-sdk
+          export ANDROID_NDK_HOME=$HOME/android-sdk/ndk/23.2.8568313
           export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
           buildozer android debug
 
-      - name: Tai APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: apk
