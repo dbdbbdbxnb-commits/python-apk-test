@@ -7,18 +7,20 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04   # tránh python 3.12
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.10 (KHÔNG dùng 3.12)
+      # FIX PYTHON 3.10 (KHÔNG DÙNG 3.12)
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install system dependencies (QUAN TRỌNG)
+      # CÀI TOÀN BỘ TOOL CẦN CHO python-for-android
+      - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
@@ -30,24 +32,30 @@ jobs:
             libtool \
             pkg-config \
             build-essential \
-            cmake
+            cmake \
+            git
 
-      - name: Install Python tools
+      - name: Install Python packages
         run: |
           pip install --upgrade pip
           pip install cython buildozer kivy
 
+      # CÀI ANDROID SDK + NDK (FIX HOÀN TOÀN LỖI SDK)
       - name: Install Android SDK
         run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd $HOME/android-sdk/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-11076708_latest.zip
-          mv cmdline-tools latest
-
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          cd $ANDROID_SDK_ROOT/cmdline-tools
+
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip commandlinetools-linux-11076708_latest.zip
+
+          # CẤU TRÚC ĐÚNG CỦA GOOGLE
+          mv cmdline-tools latest
+
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
           yes | sdkmanager --licenses
           sdkmanager \
@@ -56,19 +64,22 @@ jobs:
             "build-tools;33.0.2" \
             "ndk;23.2.8568313"
 
-          # FIX sdkmanager path cho buildozer
-          mkdir -p $HOME/android-sdk/tools/bin
-          ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
-                $HOME/android-sdk/tools/bin/sdkmanager
+          # buildozer BẮT BUỘC CÓ
+          mkdir -p $ANDROID_SDK_ROOT/tools/bin
+          ln -sf $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+                $ANDROID_SDK_ROOT/tools/bin/sdkmanager
 
+      # BUILD APK
       - name: Build APK
         run: |
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_NDK_HOME=$HOME/android-sdk/ndk/23.2.8568313
-          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+
           buildozer android debug
 
+      # UPLOAD APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
