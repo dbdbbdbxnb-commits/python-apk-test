@@ -1,15 +1,23 @@
 [app]
 title = Ung dung Python
-version = 1.0
-
 package.name = testapk
 package.domain = org.demo
 
 source.dir = .
 source.include_exts = py
 
-requirements = python3,kivy
-android.permissions = INTERNET
+version = 1.0
 
-# Quan trọng: chỉ rõ SDK cho GitHub Actions
-android.sdk_path = /home/runner/android-sdk
+requirements = python3,kivy
+
+orientation = portrait
+
+android.permissions = INTERNET
+android.api = 33
+android.minapi = 21
+android.ndk_api = 21
+
+android.accept_sdk_license = True
+android.allow_backup = True
+
+log_level = 2
