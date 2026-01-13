@@ -1,5 +1,6 @@
 [app]
 title = Ung dung Python
+version = 1.0
 package.name = testapk
 package.domain = org.demo
 source.dir = .
